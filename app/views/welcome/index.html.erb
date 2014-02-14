@@ -1,0 +1,122 @@
+<canvas id="temp" width="1280" height="200"></canvas>
+<br/>
+<canvas id="humidity" width="1280" height="200"></canvas>
+<br/>
+<canvas id="pressure" width="1280" height="200"></canvas>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		var temp_ctx = document.getElementById("temp").getContext("2d");
+		var hum_ctx = document.getElementById("humidity").getContext("2d");
+		var pres_ctx = document.getElementById("pressure").getContext("2d");
+		$.get("/snapshot.json", function(data) {
+			console.log("Found " + data.length + " entries.");
+
+			var temp_data = {
+				labels: [],
+				datasets: []
+			};
+			var hum_data = {
+				labels: [],
+				datasets: []
+			};
+			var pres_data = {
+				labels: [],
+				datasets: []
+			};
+
+			temp_dataset = {
+				fillColor: "rgba(151,187,151,0.5)",
+				strokeColor: "rgba(151,187,151,1)",
+				data: []
+			};
+			dewpoint_dataset = {
+				fillColor: "rgba(151,187,205,0.5)",
+				strokeColor: "rgba(151,187,205,1)",
+				data: []
+			};
+			feelslike_dataset = {
+				fillColor: "rgba(151,187,205,0.5)",
+				strokeColor: "rgba(151,187,205,1)",
+				data: []
+			};
+			windchill_dataset = {
+				fillColor: "rgba(151,187,205,0.5)",
+				strokeColor: "rgba(151,187,205,1)",
+				data: []
+			};
+			hum_dataset = {
+				fillColor: "rgba(205,187,151,0.5)",
+				strokeColor: "rgba(205,187,151,1)",
+				data: []
+			};
+			pres_dataset = {
+				fillColor: "rgba(187,205,151,0.5)",
+				strokeColor: "rgba(187,205,151,1)",
+				data: []
+			};
+
+			station_id = data["wunderground"][0][0];
+			console.log("Using data from station_id " + station_id);
+
+			data = data["wunderground"][0][1];
+
+			for (var hours = 0; hours < 24; hours ++ ) {
+				for (var minutes = 0; minutes < 60; minutes += 5) {
+					var temp = new Date()
+					temp.setHours(temp.getHours()-24)
+					temp.setHours(temp.getHours()+hours);
+					temp.setMinutes(minutes);
+					temp.setSeconds(0);
+
+					var label = right("00" + temp.getHours(), 2) + ":" + right("00" + temp.getMinutes(), 2);
+	
+					if (minutes % 30 != 0) {
+						label = "";
+					}	
+					temp_data.labels.push(label);
+					hum_data.labels.push(label);
+					pres_data.labels.push(label);
+
+					var from_date = temp;
+					var to_date = new Date(from_date.getTime()); to_date.setMinutes(from_date.getMinutes()+5);
+					var snapshot = find_data(data, from_date, to_date);
+					
+					temp_dataset.data.push(snapshot.temp_f || 0);
+					windchill_dataset.data.push(snapshot.windchill_f || 0);
+					feelslike_dataset.data.push(snapshot.feelslike_f || 0);
+					dewpoint_dataset.data.push(snapshot.dewpoint_f || 0);
+					hum_dataset.data.push(snapshot.relative_humidity || 0);
+					pres_dataset.data.push(snapshot.pressure_mb || 0);
+				}
+			}
+
+			temp_data.datasets.push(temp_dataset);
+			temp_data.datasets.push(dewpoint_dataset);
+			hum_data.datasets.push(hum_dataset);
+			pres_data.datasets.push(pres_dataset);
+
+			var options = {pointDot: false};
+
+			new Chart(temp_ctx).Line(temp_data, options);
+			new Chart(hum_ctx).Line(hum_data, options);
+			new Chart(pres_ctx).Line(pres_data, options);
+		});
+	});
+
+	function find_data(data, from_date, to_date) {
+		var result = {};
+		for (var i = 0; i < data.length; i ++) {
+			snapshot_date = new Date(data[i].observation_time);
+//			if (snapshot_date > from_date && snapshot_date <= to_date) {
+			if (snapshot_date <= to_date) {
+				result = data[i];
+			}
+		}
+		return result;
+	}
+
+	function right(str, chr) {
+		return str.slice(str.length-chr,str.length);
+  }
+</script>

@@ -11,3 +11,8 @@
  *= require_self
  *= require_tree .
  */
+body {
+	margin: 0px;
+	padding: 0px;
+	background-image: -webkit-radial-gradient(circle, #333, #111);
+}
